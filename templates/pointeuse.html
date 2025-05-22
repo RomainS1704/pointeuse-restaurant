@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Pointeuse</h2>
+<form action="/pointe" method="POST">
+    <input type="text" name="code" placeholder="Code employé" required>
+    <button type="submit" name="action" value="entrée">Entrée</button>
+    <button type="submit" name="action" value="sortie">Sortie</button>
+</form>
+
+<h3>Ajouter un employé</h3>
+<form action="/add_employee" method="POST">
+    <input type="text" name="name" placeholder="Nom" required>
+    <input type="text" name="code" placeholder="Code unique" required>
+    <button type="submit">Ajouter</button>
+</form>
+{% endblock %}
