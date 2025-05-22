@@ -8,13 +8,17 @@
     <th>Code</th>
     <th>Heures ce mois</th>
     <th>Mois précédent</th>
+    <th>Shifts</th>
+    <th>Supprimer</th>
   </tr>
   {% for emp in employees %}
   <tr>
     <td>{{ emp[1] }}</td>
     <td>{{ emp[2] }}</td>
-    <td>{{ "%.2f"|format(hours.get(emp[0], {}).get("current", 0)) }}</td>
-    <td>{{ "%.2f"|format(hours.get(emp[0], {}).get("previous", 0)) }}</td>
+    <td>{{ "%.2f"|format(stats.get(emp[0], {}).get("current", 0)) }}</td>
+    <td>{{ "%.2f"|format(stats.get(emp[0], {}).get("previous", 0)) }}</td>
+    <td>{{ stats.get(emp[0], {}).get("shifts", 0) }}</td>
+    <td><a href="/delete_employee/{{ emp[0] }}" onclick="return confirm('Supprimer cet employé ?')">🗑</a></td>
   </tr>
   {% endfor %}
 </table>

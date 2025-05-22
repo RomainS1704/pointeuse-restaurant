@@ -1,8 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, session
 from datetime import datetime, timedelta
 import sqlite3
-import csv
-import io
 
 app = Flask(__name__)
 app.secret_key = "mon_secret_admin"
@@ -15,36 +13,35 @@ def init_db():
 
 init_db()
 
-def calculate_hours():
+def calculate_stats():
     from collections import defaultdict
-    from datetime import datetime
-    import calendar
-
-    current_month = datetime.now().strftime('%Y-%m')
-    last_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
-    hours_by_employee = defaultdict(lambda: {"current": 0, "previous": 0})
+    now = datetime.now()
+    current_month = now.strftime('%Y-%m')
+    last_month = (now.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+    stats = defaultdict(lambda: {"current": 0, "previous": 0, "shifts": 0})
 
     with sqlite3.connect('database.db') as conn:
         c = conn.cursor()
         c.execute("SELECT employee_id, timestamp, type FROM time_logs ORDER BY timestamp ASC")
         logs = c.fetchall()
 
-    log_map = {}
+    open_shift = {}
     for emp_id, ts, tp in logs:
         month = ts[:7]
         if tp == "entrée":
-            log_map[emp_id] = ts
-        elif tp == "sortie" and emp_id in log_map:
-            start = datetime.strptime(log_map[emp_id], '%Y-%m-%d %H:%M:%S')
+            open_shift[emp_id] = ts
+        elif tp == "sortie" and emp_id in open_shift:
+            start = datetime.strptime(open_shift[emp_id], '%Y-%m-%d %H:%M:%S')
             end = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
             hours = (end - start).total_seconds() / 3600
             if month == current_month:
-                hours_by_employee[emp_id]["current"] += hours
+                stats[emp_id]["current"] += hours
             elif month == last_month:
-                hours_by_employee[emp_id]["previous"] += hours
-            del log_map[emp_id]
+                stats[emp_id]["previous"] += hours
+            stats[emp_id]["shifts"] += 1
+            del open_shift[emp_id]
 
-    return hours_by_employee
+    return stats
 
 @app.route('/')
 def home():
@@ -64,8 +61,7 @@ def pointe():
         user = c.fetchone()
         if user:
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            c.execute('INSERT INTO time_logs (employee_id, timestamp, type) VALUES (?, ?, ?)',
-                      (user[0], now, action))
+            c.execute('INSERT INTO time_logs (employee_id, timestamp, type) VALUES (?, ?, ?)', (user[0], now, action))
             conn.commit()
             return f"{user[1]} a pointé {action} à {now}"
         else:
@@ -74,25 +70,15 @@ def pointe():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form['username'] == "admin" and request.form['password'] == "admin123":
+        if request.form['username'] == "admin" and request.form['password'] == "Kankanmoussa17":
             session['admin'] = True
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('employees'))
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('home'))
-
-@app.route('/dashboard')
-def dashboard():
-    if not session.get("admin"):
-        return redirect(url_for('login'))
-    with sqlite3.connect('database.db') as conn:
-        c = conn.cursor()
-        c.execute("SELECT e.name, t.timestamp, t.type FROM time_logs t JOIN employees e ON t.employee_id = e.id ORDER BY t.timestamp DESC")
-        logs = c.fetchall()
-    return render_template('dashboard.html', logs=logs)
 
 @app.route('/employees')
 def employees():
@@ -102,8 +88,8 @@ def employees():
         c = conn.cursor()
         c.execute("SELECT id, name, code FROM employees")
         employees = c.fetchall()
-    hours = calculate_hours()
-    return render_template('employees.html', employees=employees, hours=hours)
+    stats = calculate_stats()
+    return render_template('employees.html', employees=employees, stats=stats)
 
 @app.route('/add_employee', methods=['POST'])
 def add_employee():
@@ -118,4 +104,15 @@ def add_employee():
             conn.commit()
         except sqlite3.IntegrityError:
             return "Code déjà utilisé"
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('employees'))
+
+@app.route('/delete_employee/<int:emp_id>')
+def delete_employee(emp_id):
+    if not session.get("admin"):
+        return redirect(url_for('login'))
+    with sqlite3.connect('database.db') as conn:
+        c = conn.cursor()
+        c.execute("DELETE FROM time_logs WHERE employee_id = ?", (emp_id,))
+        c.execute("DELETE FROM employees WHERE id = ?", (emp_id,))
+        conn.commit()
+    return redirect(url_for('employees'))
