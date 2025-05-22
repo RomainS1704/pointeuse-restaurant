@@ -8,57 +8,39 @@
   <meta name="CocoaVersion" content="2487.6">
   <style type="text/css">
     p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000}
-    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 12.0px Times; -webkit-text-stroke: #000000}
-    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000; min-height: 14.0px}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000; min-height: 14.0px}
     span.s1 {font-kerning: none}
-    td.td1 {width: 63.7px; margin: 0.5px 0.5px 0.5px 0.5px; padding: 1.0px 1.0px 1.0px 1.0px}
-    td.td2 {width: 290.1px; margin: 0.5px 0.5px 0.5px 0.5px; padding: 1.0px 1.0px 1.0px 1.0px}
-    td.td3 {width: 297.5px; margin: 0.5px 0.5px 0.5px 0.5px; padding: 1.0px 1.0px 1.0px 1.0px}
   </style>
 </head>
 <body>
-<p class="p1"><span class="s1">{% extends "base.html" %} {% block content %}</span></p>
-<h2 style="margin: 0.0px 0.0px 14.9px 0.0px; font: 18.0px Times; -webkit-text-stroke: #000000"><span class="s1"><b>Liste des employÃ©s</b></span></h2>
-<p class="p1"><span class="s1">{% for emp in employees %} {% endfor %}</span></p>
-<table cellspacing="0" cellpadding="0">
-  <tbody>
-    <tr>
-      <td valign="middle" class="td1">
-        <p class="p3"><span class="s1"><b>Nom</b></span></p>
-      </td>
-      <td valign="middle" class="td1">
-        <p class="p3"><span class="s1"><b>Code</b></span></p>
-      </td>
-      <td valign="middle" class="td2">
-        <p class="p3"><span class="s1"><b>Heures ce mois</b></span></p>
-      </td>
-      <td valign="middle" class="td3">
-        <p class="p3"><span class="s1"><b>Mois prÃ©cÃ©dent</b></span></p>
-      </td>
-    </tr>
-    <tr>
-      <td valign="middle" class="td1">
-        <p class="p1"><span class="s1">{{ emp[1] }}</span></p>
-      </td>
-      <td valign="middle" class="td1">
-        <p class="p1"><span class="s1">{{ emp[2] }}</span></p>
-      </td>
-      <td valign="middle" class="td2">
-        <p class="p1"><span class="s1">{{ "%.2f"|format(hours.get(emp[0], {}).get("current", 0)) }}</span></p>
-      </td>
-      <td valign="middle" class="td3">
-        <p class="p1"><span class="s1">{{ "%.2f"|format(hours.get(emp[0], {}).get("previous", 0)) }}</span></p>
-      </td>
-    </tr>
-  </tbody>
-</table>
+<p class="p1"><span class="s1">{% extends "base.html" %}</span></p>
+<p class="p1"><span class="s1">{% block content %}</span></p>
+<p class="p1"><span class="s1">&lt;h2&gt;Liste des employés&lt;/h2&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;table&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;tr&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;th&gt;Nom&lt;/th&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;th&gt;Code&lt;/th&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;th&gt;Heures ce mois&lt;/th&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;th&gt;Mois précédent&lt;/th&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/tr&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>{% for emp in employees %}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;tr&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;td&gt;{{ emp[1] }}&lt;/td&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;td&gt;{{ emp[2] }}&lt;/td&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;td&gt;{{ "%.2f"|format(hours.get(emp[0], {}).get("current", 0)) }}&lt;/td&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;td&gt;{{ "%.2f"|format(hours.get(emp[0], {}).get("previous", 0)) }}&lt;/td&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/tr&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>{% endfor %}</span></p>
+<p class="p1"><span class="s1">&lt;/table&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
 <p class="p1"><span class="s1">&lt;h3&gt;Ajouter un employé&lt;/h3&gt;</span></p>
 <p class="p1"><span class="s1">&lt;form action="/add_employee" method="POST"&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;input type="text" name="name" placeholder="Nom" required&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;input type="text" name="code" placeholder="Code unique" required&gt;</span></p>
 <p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button type="submit"&gt;Ajouter&lt;/button&gt;</span></p>
 <p class="p1"><span class="s1">&lt;/form&gt;</span></p>
-<p class="p4"><span class="s1"></span><br></p>
 <p class="p1"><span class="s1">{% endblock %}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
 </body>
 </html>
