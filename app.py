@@ -1,3 +1,6 @@
+import os
+app = Flask(__name__)
+app.config['DEBUG'] = True
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime
 import sqlite3
@@ -59,6 +62,7 @@ def add_employee():
         except sqlite3.IntegrityError:
             return "Ce code est déjà utilisé."
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
