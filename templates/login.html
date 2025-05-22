@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Connexion Manager</h2>
-<form action="/login" method="POST">
-    <input type="text" name="username" placeholder="Nom d'utilisateur" required>
-    <input type="password" name="password" placeholder="Mot de passe" required>
-    <button type="submit">Se connecter</button>
+<form method="post">
+    <input type="text" name="username" placeholder="admin" required>
+    <input type="password" name="password" placeholder="admin123" required>
+    <button type="submit">Connexion</button>
 </form>
 {% endblock %}

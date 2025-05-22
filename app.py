@@ -15,6 +15,37 @@ def init_db():
 
 init_db()
 
+def calculate_hours():
+    from collections import defaultdict
+    from datetime import datetime
+    import calendar
+
+    current_month = datetime.now().strftime('%Y-%m')
+    last_month = (datetime.now().replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
+    hours_by_employee = defaultdict(lambda: {"current": 0, "previous": 0})
+
+    with sqlite3.connect('database.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT employee_id, timestamp, type FROM time_logs ORDER BY timestamp ASC")
+        logs = c.fetchall()
+
+    log_map = {}
+    for emp_id, ts, tp in logs:
+        month = ts[:7]
+        if tp == "entrée":
+            log_map[emp_id] = ts
+        elif tp == "sortie" and emp_id in log_map:
+            start = datetime.strptime(log_map[emp_id], '%Y-%m-%d %H:%M:%S')
+            end = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
+            hours = (end - start).total_seconds() / 3600
+            if month == current_month:
+                hours_by_employee[emp_id]["current"] += hours
+            elif month == last_month:
+                hours_by_employee[emp_id]["previous"] += hours
+            del log_map[emp_id]
+
+    return hours_by_employee
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -40,6 +71,19 @@ def pointe():
         else:
             return "Code invalide"
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form['username'] == "admin" and request.form['password'] == "admin123":
+            session['admin'] = True
+            return redirect(url_for('dashboard'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+
 @app.route('/dashboard')
 def dashboard():
     if not session.get("admin"):
@@ -49,6 +93,17 @@ def dashboard():
         c.execute("SELECT e.name, t.timestamp, t.type FROM time_logs t JOIN employees e ON t.employee_id = e.id ORDER BY t.timestamp DESC")
         logs = c.fetchall()
     return render_template('dashboard.html', logs=logs)
+
+@app.route('/employees')
+def employees():
+    if not session.get("admin"):
+        return redirect(url_for('login'))
+    with sqlite3.connect('database.db') as conn:
+        c = conn.cursor()
+        c.execute("SELECT id, name, code FROM employees")
+        employees = c.fetchall()
+    hours = calculate_hours()
+    return render_template('employees.html', employees=employees, hours=hours)
 
 @app.route('/add_employee', methods=['POST'])
 def add_employee():
@@ -64,34 +119,3 @@ def add_employee():
         except sqlite3.IntegrityError:
             return "Code déjà utilisé"
     return redirect(url_for('dashboard'))
-
-@app.route('/export_csv')
-def export_csv():
-    if not session.get("admin"):
-        return redirect(url_for('login'))
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['Nom', 'Horodatage', 'Type'])
-    with sqlite3.connect('database.db') as conn:
-        c = conn.cursor()
-        c.execute("SELECT e.name, t.timestamp, t.type FROM time_logs t JOIN employees e ON t.employee_id = e.id ORDER BY t.timestamp DESC")
-        for row in c.fetchall():
-            writer.writerow(row)
-    output.seek(0)
-    return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv', as_attachment=True, download_name='pointages.csv')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        if request.form['username'] == "admin" and request.form['password'] == "admin123":
-            session['admin'] = True
-            return redirect(url_for('dashboard'))
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('home'))
-
-if __name__ == '__main__':
-    app.run(debug=True)

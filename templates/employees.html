@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Liste des employés</h2>
+<table>
+<tr><th>Nom</th><th>Code</th><th>Heures ce mois</th><th>Mois précédent</th></tr>
+{% for emp in employees %}
+<tr>
+  <td>{{ emp[1] }}</td>
+  <td>{{ emp[2] }}</td>
+  <td>{{ "%.2f"|format(hours.get(emp[0], {}).get("current", 0)) }}</td>
+  <td>{{ "%.2f"|format(hours.get(emp[0], {}).get("previous", 0)) }}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
