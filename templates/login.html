@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Connexion Manager</h2>
-<form method="post">
-    <input type="text" name="username" placeholder="admin" required>
-    <input type="password" name="password" placeholder="Kankanmoussa17" required>
+<form method="post" autocomplete="off">
+    <input type="text" name="username" placeholder="admin" required autocomplete="off">
+    <input type="password" name="password" placeholder="Kankanmoussa17" required autocomplete="off">
     <button type="submit">Connexion</button>
 </form>
 {% endblock %}
