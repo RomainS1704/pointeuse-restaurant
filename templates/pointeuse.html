@@ -1,1 +1,14 @@
-{% extends "base.html" %}{% block content %}<h2>Pointeuse</h2><form method="post" action="/pointe"><input type="text" name="code" placeholder="Code employé" required><button name="action" value="entrée">Entrée</button><button name="action" value="sortie">Sortie</button></form>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<h2>Pointeuse</h2>
+
+{% if error %}
+  <p style="color: red; font-weight: bold;">{{ error }}</p>
+{% endif %}
+
+<form method="post" action="/pointe">
+    <input type="text" name="code" placeholder="Code employé" required>
+    <button name="action" value="entrée">Entrée</button>
+    <button name="action" value="sortie">Sortie</button>
+</form>
+{% endblock %}
