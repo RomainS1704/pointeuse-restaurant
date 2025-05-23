@@ -83,7 +83,7 @@ def pointe():
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             c.execute('INSERT INTO time_logs (employee_id, timestamp, type) VALUES (?, ?, ?)', (user[0], now, action))
             conn.commit()
-            return f"{user[1]} a pointé {action} à {now}"
+    return redirect(url_for('home'))
         else:
             return "Code invalide"
 
