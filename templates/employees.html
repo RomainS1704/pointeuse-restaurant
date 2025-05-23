@@ -8,8 +8,7 @@
     <th>Code</th>
     <th>Heures ce mois</th>
     <th>Mois précédent</th>
-    <th>Shifts auto</th>
-    <th>Shifts manuels</th>
+    <th>Shifts</th>
     <th>Actions</th>
   </tr>
   {% for emp in employees %}
@@ -19,12 +18,6 @@
     <td>{{ "%.2f"|format(stats.get(emp[0], {}).get("current", 0)) }}</td>
     <td>{{ "%.2f"|format(stats.get(emp[0], {}).get("previous", 0)) }}</td>
     <td>{{ stats.get(emp[0], {}).get("shifts", 0) }}</td>
-    <td>
-      <form method="post" action="/update_shifts/{{ emp[0] }}">
-        <input type="number" name="manual_shifts" value="{{ emp[3] }}" min="0" style="width: 60px;">
-        <button type="submit">💾</button>
-      </form>
-    </td>
     <td>
       <a href="/export_csv/{{ emp[0] }}">📤 Export</a> |
       <a href="/delete_employee/{{ emp[0] }}" onclick="return confirm('Supprimer cet employé ?')">🗑 Supprimer</a>

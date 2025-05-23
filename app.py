@@ -11,7 +11,7 @@ app.secret_key = "mon_secret_admin"
 def init_db():
     with sqlite3.connect('database.db') as conn:
         c = conn.cursor()
-        c.execute("CREATE TABLE IF NOT EXISTS employees (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE, manual_shifts INTEGER DEFAULT 0)")
+        c.execute("CREATE TABLE IF NOT EXISTS employees (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, code TEXT NOT NULL UNIQUE)")
         c.execute("CREATE TABLE IF NOT EXISTS time_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id INTEGER, timestamp TEXT, type TEXT, FOREIGN KEY(employee_id) REFERENCES employees(id))")
 
 init_db()
@@ -21,31 +21,47 @@ def calculate_stats():
     current_month = now.strftime('%Y-%m')
     last_month = (now.replace(day=1) - timedelta(days=1)).strftime('%Y-%m')
     stats = defaultdict(lambda: {"current": 0, "previous": 0, "shifts": 0})
+    shifts = defaultdict(list)
 
     with sqlite3.connect('database.db') as conn:
         c = conn.cursor()
         c.execute("SELECT employee_id, timestamp, type FROM time_logs ORDER BY timestamp ASC")
         logs = c.fetchall()
+
+        open_shift = {}
         for emp_id, ts, tp in logs:
-            month = ts[:7]
             if tp == "entrée":
-                stats[emp_id]["last_in"] = ts
-            elif tp == "sortie" and "last_in" in stats[emp_id]:
-                start = datetime.strptime(stats[emp_id]["last_in"], '%Y-%m-%d %H:%M:%S')
+                open_shift[emp_id] = ts
+            elif tp == "sortie" and emp_id in open_shift:
+                start = datetime.strptime(open_shift[emp_id], '%Y-%m-%d %H:%M:%S')
                 end = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S')
-                hours = (end - start).total_seconds() / 3600
+                month = start.strftime('%Y-%m')
+
+                pause = 0
+                if start.hour < 18 and (end - start).total_seconds() >= 5 * 3600:
+                    pause = 60
+                elif start.hour >= 18 and (end - start).total_seconds() >= 4 * 3600:
+                    pause = 30
+
+                net_minutes = (end - start).total_seconds() / 60 - pause
+                net_hours = net_minutes / 60
+
                 if month == current_month:
-                    stats[emp_id]["current"] += hours
+                    stats[emp_id]["current"] += net_hours
                 elif month == last_month:
-                    stats[emp_id]["previous"] += hours
+                    stats[emp_id]["previous"] += net_hours
                 stats[emp_id]["shifts"] += 1
-                del stats[emp_id]["last_in"]
 
-        c.execute("SELECT id, manual_shifts FROM employees")
-        for emp_id, manual in c.fetchall():
-            stats[emp_id]["manual"] = manual
+                shifts[emp_id].append({
+                    "start": start,
+                    "end": end,
+                    "pause": pause,
+                    "net_minutes": net_minutes
+                })
 
-    return stats
+                del open_shift[emp_id]
+
+    return stats, shifts
 
 @app.route('/')
 def home():
@@ -90,9 +106,9 @@ def employees():
         return redirect(url_for('login'))
     with sqlite3.connect('database.db') as conn:
         c = conn.cursor()
-        c.execute("SELECT id, name, code, manual_shifts FROM employees")
+        c.execute("SELECT id, name, code FROM employees")
         employees = c.fetchall()
-    stats = calculate_stats()
+    stats, _ = calculate_stats()
     return render_template('employees.html', employees=employees, stats=stats)
 
 @app.route('/add_employee', methods=['POST'])
@@ -121,28 +137,29 @@ def delete_employee(emp_id):
         conn.commit()
     return redirect(url_for('employees'))
 
-@app.route('/update_shifts/<int:emp_id>', methods=['POST'])
-def update_shifts(emp_id):
-    new_value = request.form['manual_shifts']
-    with sqlite3.connect('database.db') as conn:
-        c = conn.cursor()
-        c.execute("UPDATE employees SET manual_shifts = ? WHERE id = ?", (new_value, emp_id))
-        conn.commit()
-    return redirect(url_for('employees'))
-
 @app.route('/export_csv/<int:emp_id>')
 def export_csv(emp_id):
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Horodatage", "Type"])
+    writer.writerow(["Entrée", "Sortie", "Pause (min)", "Durée comptabilisée (HH:MM)"])
 
-    with sqlite3.connect('database.db') as conn:
-        c = conn.cursor()
-        c.execute("SELECT name FROM employees WHERE id = ?", (emp_id,))
-        name = c.fetchone()[0]
-        c.execute("SELECT timestamp, type FROM time_logs WHERE employee_id = ? ORDER BY timestamp", (emp_id,))
-        for row in c.fetchall():
-            writer.writerow(row)
+    stats, shifts = calculate_stats()
+    total_minutes = 0
+
+    for shift in shifts.get(emp_id, []):
+        start = shift["start"].strftime('%Y-%m-%d %H:%M')
+        end = shift["end"].strftime('%Y-%m-%d %H:%M')
+        pause = shift["pause"]
+        net_minutes = int(shift["net_minutes"])
+        hours = net_minutes // 60
+        minutes = net_minutes % 60
+        writer.writerow([start, end, pause, f"{hours:02}:{minutes:02}"])
+        total_minutes += net_minutes
+
+    total_hours = int(total_minutes) // 60
+    total_mins = int(total_minutes) % 60
+    writer.writerow([])
+    writer.writerow(["", "", "Total", f"{total_hours:02}:{total_mins:02}"])
 
     buffer.seek(0)
-    return send_file(io.BytesIO(buffer.getvalue().encode()), mimetype="text/csv", as_attachment=True, download_name=f"{name}_pointages.csv")
+    return send_file(io.BytesIO(buffer.getvalue().encode()), mimetype="text/csv", as_attachment=True, download_name="export_pointages.csv")
