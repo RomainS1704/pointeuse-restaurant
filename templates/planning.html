@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="text-xl font-bold mb-4">Planning Hebdomadaire</h2>
+<div class="mb-6">
+  <button class="bg-blue-600 text-white px-4 py-2 rounded">Ajouter un employé</button>
+</div>
+<div class="grid grid-cols-9 gap-2 font-bold bg-white p-2 rounded shadow">
+  <div>Employé</div>
+  <div>Lun.</div>
+  <div>Mar.</div>
+  <div>Mer.</div>
+  <div>Jeu.</div>
+  <div>Ven.</div>
+  <div>Sam.</div>
+  <div>Dim.</div>
+  <div>Total h</div>
+</div>
+<div id="planning" class="space-y-2 mt-2">
+  {% for emp in employees %}
+  <div class="grid grid-cols-9 gap-2 bg-white p-2 rounded shadow items-center">
+    <div class="cursor-move font-medium">{{ emp[1] }}</div>
+    {% for day in days %}
+    <div>
+      <input name="shift_{{ emp[0] }}_{{ day }}" class="w-full border rounded px-1" value="{{ planning.get(emp[0], {}).get(day, '') }}">
+    </div>
+    {% endfor %}
+    <div class="text-center font-bold">{{ hours.get(emp[0], '0h') }}</div>
+  </div>
+  {% endfor %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  new Sortable(document.getElementById('planning'), {
+    animation: 150,
+    handle: '.cursor-move',
+  });
+</script>
+{% endblock %}
