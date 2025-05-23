@@ -139,27 +139,39 @@ def delete_employee(emp_id):
 
 @app.route('/export_csv/<int:emp_id>')
 def export_csv(emp_id):
+    with sqlite3.connect('database.db') as conn:
+        c = conn.cursor()
+        c.execute('SELECT name FROM employees WHERE id = ?', (emp_id,))
+        employee = c.fetchone()
+        if not employee:
+            return "Employé non trouvé"
+
+    employee_name = employee[0].replace(' ', '_')
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Entrée", "Sortie", "Pause (min)", "Durée comptabilisée (HH:MM)"])
+    writer.writerow(["Date", "Heure entrée", "Heure sortie", "Pause (min)", "Durée comptabilisée (HH:MM)"])
 
     stats, shifts = calculate_stats()
     total_minutes = 0
 
     for shift in shifts.get(emp_id, []):
-        start = shift["start"].strftime('%Y-%m-%d %H:%M')
-        end = shift["end"].strftime('%Y-%m-%d %H:%M')
+        start_dt = shift["start"]
+        end_dt = shift["end"]
+        date = start_dt.strftime('%Y-%m-%d')
+        start = start_dt.strftime('%H:%M')
+        end = end_dt.strftime('%H:%M')
         pause = shift["pause"]
         net_minutes = int(shift["net_minutes"])
         hours = net_minutes // 60
         minutes = net_minutes % 60
-        writer.writerow([start, end, pause, f"{hours:02}:{minutes:02}"])
+        writer.writerow([date, start, end, pause, f"{hours:02}:{minutes:02}"])
         total_minutes += net_minutes
 
     total_hours = int(total_minutes) // 60
     total_mins = int(total_minutes) % 60
     writer.writerow([])
-    writer.writerow(["", "", "Total", f"{total_hours:02}:{total_mins:02}"])
+    writer.writerow(["", "", "", "Total", f"{total_hours:02}:{total_mins:02}"])
 
     buffer.seek(0)
-    return send_file(io.BytesIO(buffer.getvalue().encode()), mimetype="text/csv", as_attachment=True, download_name="export_pointages.csv")
+    filename = f"export_{employee_name}.csv"
+    return send_file(io.BytesIO(buffer.getvalue().encode()), mimetype="text/csv", as_attachment=True, download_name=filename)
