@@ -72,7 +72,7 @@ def home():
 def pointeuse():
     return render_template('pointeuse.html')
 
-@app.route('/pointe', methods=['POST'])
+@ app.route('/pointe', methods=['POST'])
 def pointe():
     code = request.form['code']
     action = request.form['action']
@@ -84,7 +84,9 @@ def pointe():
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             c.execute('INSERT INTO time_logs (employee_id, timestamp, type) VALUES (?, ?, ?)', (user[0], now, action))
             conn.commit()
-    return redirect(url_for('home'))
+            return redirect(url_for('home'))
+        else:
+            return render_template('pointeuse.html', error="Code invalide. Veuillez réessayer.")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
