@@ -46,7 +46,6 @@ def planning():
         c = conn.cursor()
 
         if request.method == "POST":
-            # Réinitialiser le planning
             c.execute("DELETE FROM planning")
             for key in request.form:
                 if key.startswith("shift_"):
@@ -59,15 +58,14 @@ def planning():
                                       (emp_id, day, shift, role))
             conn.commit()
 
-        # Lecture planning
         c.execute("SELECT id, name FROM employees")
         employees = c.fetchall()
-        c.execute("SELECT employee_id, day, shift FROM planning")
+        c.execute("SELECT employee_id, day, shift, role FROM planning")
         rows = c.fetchall()
 
     planning_data = defaultdict(dict)
-    for emp_id, day, shift in rows:
-        planning_data[int(emp_id)][day] = shift
+    for emp_id, day, shift, role in rows:
+        planning_data[int(emp_id)][day] = f"{shift} {role}"
 
     total_hours = {}
     for emp_id in planning_data:
@@ -81,10 +79,11 @@ def planning():
                     h2, m2 = map(int, end.split(":"))
                     diff = (h2 * 60 + m2) - (h1 * 60 + m1)
                     if diff < 0:
-                        diff += 24 * 60  # overnight
+                        diff += 24 * 60
                     total += diff
                 except:
                     pass
         total_hours[emp_id] = f"{total // 60}h{total % 60:02}"
 
-    return render_template("planning.html", employees=employees, planning=planning_data, days=days, roles=roles, heures=heures, hours=total_hours)
+    return render_template("planning.html", employees=employees, planning=planning_data,
+                           days=days, roles=roles, heures=heures, hours=total_hours)
